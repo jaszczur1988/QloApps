@@ -554,6 +554,7 @@ class HotelReservationSystem extends Module
         $this->installTab('AdminHotelReservationSystemManagement', 'Hotel Reservation System');
         $this->installTab('AdminAddHotel', 'Manage Hotel', 'AdminHotelReservationSystemManagement');
         $this->installTab('AdminHotelRoomsBooking', 'Book Now', 'AdminHotelReservationSystemManagement');
+        $this->installTab('AdminReservationCalendar', 'Reservation Calendar', 'AdminHotelReservationSystemManagement');
         $this->installTab('AdminHotelFeatures', 'Manage Hotel Features', 'AdminHotelReservationSystemManagement');
         $this->installTab('AdminOrderRefundRules', 'Manage Order Refund Rules', 'AdminHotelReservationSystemManagement');
         $this->installTab('AdminOrderRefundRequests', 'Manage Order Refund Requests', 'AdminHotelReservationSystemManagement');
@@ -599,6 +600,46 @@ class HotelReservationSystem extends Module
         return $res;
     }
 
+    public function installOrderStatuses()
+    {
+        $statuses = array(
+            array(
+                'name' => 'Zapłacono gotówką',
+                'color' => '#32CD32', // LimeGreen
+                'logable' => true,
+                'paid' => true,
+            ),
+            array(
+                'name' => 'Zapłacono kartą',
+                'color' => '#1E90FF', // DodgerBlue
+                'logable' => true,
+                'paid' => true,
+            )
+        );
+
+        foreach ($statuses as $status) {
+            $orderState = new OrderState();
+            $orderState->name = array();
+            foreach (Language::getLanguages(true) as $lang) {
+                $orderState->name[$lang['id_lang']] = $status['name'];
+            }
+            $orderState->color = $status['color'];
+            $orderState->hidden = false;
+            $orderState->delivery = false;
+            $orderState->logable = $status['logable'];
+            $orderState->invoice = true;
+            $orderState->paid = $status['paid'];
+            $orderState->send_email = true;
+            $orderState->template = 'payment';
+
+            if (!$orderState->add()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public function install()
     {
         $objModuleDb = new HotelReservationSystemDb();
@@ -607,6 +648,7 @@ class HotelReservationSystem extends Module
             || !$objModuleDb->createTables()
             || !$this->registerModuleHooks()
             || !$this->callInstallTab()
+            || !$this->installOrderStatuses()
             || !$objHtlHelper->insertDefaultHotelEntries()
             || !$objHtlHelper->createHotelRoomDefaultFeatures()
             || !$objHtlHelper->createHotelDefaultBedTypes()
